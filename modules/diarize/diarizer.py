@@ -27,7 +27,9 @@ class Diarizer:
             audio: Union[str, BinaryIO, np.ndarray],
             transcribed_result: List[Segment],
             use_auth_token: str,
-            device: Optional[str] = None
+            device: Optional[str] = None,
+            min_speakers: Optional[int] = None,
+            max_speakers: Optional[int] = None
             ) -> Tuple[List[Segment], float]:
         """
         Diarize transcribed result as a post-processing
@@ -43,6 +45,10 @@ class Diarizer:
             You must manually go to the website https://huggingface.co/pyannote/speaker-diarization-3.1 and agree to their TOS to download the model.
         device: Optional[str]
             Device for diarization.
+        min_speakers: Optional[int]
+            Minimum number of speakers to detect. None for automatic detection.
+        max_speakers: Optional[int]
+            Maximum number of speakers to detect. None for automatic detection.
 
         Returns
         ----------
@@ -64,7 +70,7 @@ class Diarizer:
 
         audio = load_audio(audio)
 
-        diarization_segments = self.pipe(audio)
+        diarization_segments = self.pipe(audio, min_speakers=min_speakers, max_speakers=max_speakers)
         diarized_result = assign_word_speakers(
             diarization_segments,
             {"segments": transcribed_result}
@@ -131,7 +137,11 @@ class Diarizer:
             self.pipe = None
         if self.device == "cuda":
             torch.cuda.empty_cache()
-            torch.cuda.reset_max_memory_allocated()
+            # Use reset_peak_memory_stats instead of reset_max_memory_allocated
+            if hasattr(torch.cuda, 'reset_peak_memory_stats'):
+                torch.cuda.reset_peak_memory_stats()
+            else:
+                torch.cuda.reset_max_memory_allocated()
         if self.device == "xpu":
             torch.xpu.empty_cache()
             torch.xpu.reset_accumulated_memory_stats()

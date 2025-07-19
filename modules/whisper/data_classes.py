@@ -16,6 +16,7 @@ class WhisperImpl(Enum):
     WHISPER = "whisper"
     FASTER_WHISPER = "faster-whisper"
     INSANELY_FAST_WHISPER = "insanely_fast_whisper"
+    VOXTRAL_MINI = "voxtral-mini"
 
 
 class Segment(BaseModel):
@@ -164,6 +165,14 @@ class DiarizationParams(BaseParams):
         default=True,
         description="Offload Diarization model after Speaker diarization"
     )
+    min_speakers: Optional[int] = Field(
+        default=1,
+        description="Minimum number of speakers to detect. Leave empty for automatic detection"
+    )
+    max_speakers: Optional[int] = Field(
+        default=5,
+        description="Maximum number of speakers to detect. Leave empty for automatic detection"
+    )
 
     @classmethod
     def to_gradio_inputs(cls,
@@ -188,6 +197,22 @@ class DiarizationParams(BaseParams):
             gr.Checkbox(
                 label=_("Offload sub model when finished"),
                 value=defaults.get("enable_offload", cls.__fields__["enable_offload"].default),
+            ),
+            gr.Number(
+                label=_("Minimum speakers"),
+                value=defaults.get("min_speakers", cls.__fields__["min_speakers"].default),
+                minimum=1,
+                maximum=20,
+                precision=0,
+                info=_("Minimum number of speakers to detect. Leave empty for automatic detection")
+            ),
+            gr.Number(
+                label=_("Maximum speakers"),
+                value=defaults.get("max_speakers", cls.__fields__["max_speakers"].default),
+                minimum=1,
+                maximum=20,
+                precision=0,
+                info=_("Maximum number of speakers to detect. Leave empty for automatic detection")
             )
         ]
 

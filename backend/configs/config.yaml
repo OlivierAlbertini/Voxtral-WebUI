@@ -1,8 +1,8 @@
 whisper:
-  # Default implementation is faster-whisper. This indicates model name within `models\Whisper\faster-whisper`
-  model_size: large-v2
-  # Compute type. 'float16' for CUDA, 'float32' for CPU.
-  compute_type: float16
+  # Default implementation is voxtral-mini. This indicates model name within `models\Whisper\voxtral`
+  model_size: voxtral-mini-3b
+  # Compute type. 'bfloat16' for CUDA, 'float32' for CPU.
+  compute_type: bfloat16
   # Whether to offload the model after the inference.
   enable_offload: true
 

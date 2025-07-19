@@ -14,7 +14,10 @@ torch
 torchaudio
 git+https://github.com/jhj0517/jhj0517-whisper.git
 faster-whisper==1.1.1
-transformers==4.47.1
+git+https://github.com/huggingface/transformers.git
+mistral-common[audio]
+librosa
+soundfile
 gradio
 gradio-i18n==0.3.0
 pytubefix
