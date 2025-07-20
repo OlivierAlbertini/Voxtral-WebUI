@@ -1,9 +1,9 @@
 # Voxtral-WebUI
 A Gradio-based browser interface for [Voxtral](https://huggingface.co/mistralai/Voxtral-Mini-3B-2507). You can use it as an Easy Subtitle Generator!
 
-![screen](https://github.com/user-attachments/assets/caea3afd-a73c-40af-a347-8d57914b1d0f)
+![screen](./gradio-voxtral.png)
 
-This project is a fork of https://github.com/OlivierAlbertini/Whisper-WebUI that I adapted for Voxtral (the french touch) !
+This project is a fork of [https://github.com/jhj0517/Whisper-WebUI](https://github.com/jhj0517/Whisper-WebUI) that I adapted for Voxtral (the french touch) !
 
 # Feature
 - Select the implementation you want to use between :
@@ -32,7 +32,7 @@ This project is a fork of https://github.com/OlivierAlbertini/Whisper-WebUI that
       2. https://huggingface.co/pyannote/segmentation-3.0
 
 ### Pipeline Diagram
-![Transcription Pipeline](https://github.com/user-attachments/assets/1d8c63ac-72a4-4a0b-9db0-e03695dcf088)
+![Transcription Pipeline](./diagram.png)
 
 # Installation and Running
 
