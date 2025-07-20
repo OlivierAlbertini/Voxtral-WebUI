@@ -1,18 +1,16 @@
-# Whisper-WebUI
-A Gradio-based browser interface for [Whisper](https://github.com/openai/whisper). You can use it as an Easy Subtitle Generator!
+# Voxtral-WebUI
+A Gradio-based browser interface for [Voxtral](https://huggingface.co/mistralai/Voxtral-Mini-3B-2507). You can use it as an Easy Subtitle Generator!
 
 ![screen](https://github.com/user-attachments/assets/caea3afd-a73c-40af-a347-8d57914b1d0f)
 
-
-
-## Notebook
-If you wish to try this on Colab, you can do it in [here](https://colab.research.google.com/github/jhj0517/Whisper-WebUI/blob/master/notebook/whisper-webui.ipynb)!
+This project is a fork of https://github.com/jhj0517/Whisper-WebUI that I adapted for Voxtral (the french touch) !
 
 # Feature
-- Select the Whisper implementation you want to use between :
+- Select the implementation you want to use between :
    - [openai/whisper](https://github.com/openai/whisper)
-   - [SYSTRAN/faster-whisper](https://github.com/SYSTRAN/faster-whisper) (used by default)
+   - [SYSTRAN/faster-whisper](https://github.com/SYSTRAN/faster-whisper)
    - [Vaibhavs10/insanely-fast-whisper](https://github.com/Vaibhavs10/insanely-fast-whisper)
+   - [mistralai/Voxtral-Mini-3B](https://huggingface.co/mistralai/Voxtral-Mini-3B-2507) - New multilingual speech recognition model, used by default
 - Generate subtitles from various sources, including :
   - Files
   - Youtube
@@ -53,7 +51,7 @@ The app is able to run with [Pinokio](https://github.com/pinokiocomputer/pinokio
 2. Git clone the repository
 
 ```sh
-git clone https://github.com/jhj0517/Whisper-WebUI.git
+git clone https://github.com/OlivierAlbertini/Whisper-WebUI.git
 ```
 
 3. Build the image ( Image is about 7GB~ )
@@ -70,14 +68,14 @@ docker compose up
 
 5. Connect to the WebUI with your browser at `http://localhost:7860`
 
-If needed, update the [`docker-compose.yaml`](https://github.com/jhj0517/Whisper-WebUI/blob/master/docker-compose.yaml) to match your environment.
+If needed, update the [`docker-compose.yaml`](https://github.com/OlivierAlbertini/Whisper-WebUI/blob/master/docker-compose.yaml) to match your environment.
 
 - ## Run Locally
 
 ### Prerequisite
 To run this WebUI, you need to have `git`, `3.10 <= python <= 3.12`, `FFmpeg`.
 
-**Edit `--extra-index-url` in the [`requirements.txt`](https://github.com/jhj0517/Whisper-WebUI/blob/master/requirements.txt) to match your device.<br>** 
+**Edit `--extra-index-url` in the [`requirements.txt`](https://github.com/OlivierAlbertini/Whisper-WebUI/blob/master/requirements.txt) to match your device.<br>** 
 By default, the WebUI assumes you're using an Nvidia GPU and **CUDA 12.6.** If you're using Intel or another CUDA version, read the [`requirements.txt`](https://github.com/jhj0517/Whisper-WebUI/blob/master/requirements.txt) and edit `--extra-index-url`.
 
 Please follow the links below to install the necessary software:
@@ -92,12 +90,12 @@ After installing FFmpeg, **make sure to add the `FFmpeg/bin` folder to your syst
 
 1. git clone this repository
 ```shell
-git clone https://github.com/jhj0517/Whisper-WebUI.git
+git clone https://github.com/OlivierAlbertini/Whisper-WebUI.git
 ```
 2. Run `install.bat` or `install.sh` to install dependencies. (It will create a `venv` directory and install dependencies there.)
 3. Start WebUI with `start-webui.bat` or `start-webui.sh` (It will run `python app.py` after activating the venv)
 
-And you can also run the project with command line arguments if you like to, see [wiki](https://github.com/jhj0517/Whisper-WebUI/wiki/Command-Line-Arguments) for a guide to arguments.
+And you can also run the project with command line arguments if you like to, see [wiki](https://github.com/OlivierAlbertini/Whisper-WebUI/wiki/Command-Line-Arguments) for a guide to arguments.
 
 # VRAM Usages
 This project is integrated with [faster-whisper](https://github.com/guillaumekln/faster-whisper) by default for better VRAM usage and transcription speed.
@@ -107,9 +105,35 @@ According to faster-whisper, the efficiency of the optimized whisper model is as
 |-------------------|-----------|-----------|-------|-----------------|-----------------|
 | openai/whisper    | fp16      | 5         | 4m30s | 11325MB         | 9439MB          |
 | faster-whisper    | fp16      | 5         | 54s   | 4755MB          | 3244MB          |
+| voxtral-mini-3b   | bfloat16  | -         | -     | ~9500MB         | -               |
+
+## Voxtral Support
+This project now supports [Voxtral-Mini-3B](https://huggingface.co/mistralai/Voxtral-Mini-3B-2507), a multilingual speech recognition model by Mistral AI.
+
+### Voxtral Features:
+- **Multilingual support**: 8 languages including English, French, Spanish, German, Italian, Portuguese, Polish, and Dutch
+- **Automatic language detection**
+- **Long audio support**: Automatically segments audio files longer than 25 minutes
+- **Optimized for GPU**: Uses bfloat16 precision for efficient GPU usage
+
+### Voxtral Installation:
+To use Voxtral, you need to install the development version of transformers:
+```bash
+pip uninstall transformers -y
+pip install git+https://github.com/huggingface/transformers.git
+```
+
+Or use the provided installation script:
+```bash
+# Windows
+install-voxtral.bat
+
+# Linux/Mac
+./install-voxtral.sh
+```
 
 If you want to use an implementation other than faster-whisper, use `--whisper_type` arg and the repository name.<br>
-Read [wiki](https://github.com/jhj0517/Whisper-WebUI/wiki/Command-Line-Arguments) for more info about CLI args.
+Read [wiki](https://github.com/OlivierAlbertini/Whisper-WebUI/wiki/Command-Line-Arguments) for more info about CLI args.
 
 If you want to use a fine-tuned model, manually place the models in `models/Whisper/` corresponding to the implementation.
 
@@ -133,4 +157,4 @@ If you're interested in deploying this app as a REST API, please check out [/bac
 - [ ] Support real-time transcription for microphone
 
 ### Translation 🌐
-Any PRs that translate the language into [translation.yaml](https://github.com/jhj0517/Whisper-WebUI/blob/master/configs/translation.yaml) would be greatly appreciated!
+Any PRs that translate the language into [translation.yaml](https://github.com/OlivierAlbertini/Whisper-WebUI/blob/master/configs/translation.yaml) would be greatly appreciated!

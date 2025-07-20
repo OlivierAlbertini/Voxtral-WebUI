@@ -12,7 +12,8 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 from modules.whisper.data_classes import *
 from modules.utils.paths import BACKEND_CACHE_DIR
-from modules.whisper.faster_whisper_inference import FasterWhisperInference
+from modules.whisper.whisper_factory import WhisperFactory
+from modules.whisper.base_transcription_pipeline import BaseTranscriptionPipeline
 from backend.common.audio import read_audio
 from backend.common.models import QueueResponse
 from backend.common.config_loader import load_server_config
@@ -41,11 +42,24 @@ def create_progress_callback(identifier: str):
 
 
 @functools.lru_cache
-def get_pipeline() -> 'FasterWhisperInference':
+def get_pipeline() -> 'BaseTranscriptionPipeline':
     config = load_server_config()["whisper"]
-    inferencer = FasterWhisperInference(
+    
+    # Get whisper type from config or determine based on model_size
+    whisper_type = config.get("whisper_type", None)
+    if not whisper_type:
+        # Fallback to determining type from model_size
+        model_size = config["model_size"]
+        if model_size == "voxtral-mini-3b":
+            whisper_type = WhisperImpl.VOXTRAL_MINI.value
+        else:
+            whisper_type = WhisperImpl.FASTER_WHISPER.value
+    
+    inferencer = WhisperFactory.create_whisper_inference(
+        whisper_type=whisper_type,
         output_dir=BACKEND_CACHE_DIR
     )
+    
     inferencer.update_model(
         model_size=config["model_size"],
         compute_type=config["compute_type"]

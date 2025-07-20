@@ -19,6 +19,35 @@ logger = get_logger()
 
 class WhisperFactory:
     @staticmethod
+    def get_combined_available_models():
+        """
+        Get all available models across different whisper implementations.
+        
+        Returns
+        -------
+        list
+            Combined list of available models from all implementations
+        """
+        import whisper
+        combined_models = []
+        
+        # Add standard Whisper models
+        combined_models.extend(whisper.available_models())
+        
+        # Add Voxtral models
+        combined_models.append("voxtral-mini-3b")
+        
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_models = []
+        for model in combined_models:
+            if model not in seen:
+                seen.add(model)
+                unique_models.append(model)
+        
+        return unique_models
+    
+    @staticmethod
     def create_whisper_inference(
         whisper_type: str,
         whisper_model_dir: str = WHISPER_MODELS_DIR,

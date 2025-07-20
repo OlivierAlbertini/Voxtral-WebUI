@@ -291,6 +291,11 @@ class VoxtralWhisperInference(BaseTranscriptionPipeline):
         progress: gr.Progress
             Indicator to show progress directly in gradio.
         """
+        # Only handle voxtral models
+        if model_size != "voxtral-mini-3b":
+            raise ValueError(f"VoxtralWhisperInference only supports 'voxtral-mini-3b', not '{model_size}'. "
+                           f"Please use a different whisper_type for model '{model_size}'.")
+        
         progress(0, desc="Initializing Voxtral Model...")
         
         if self.model is not None and self.current_model_size == model_size:

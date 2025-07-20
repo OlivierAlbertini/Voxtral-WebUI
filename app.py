@@ -54,7 +54,9 @@ class App:
         uvr_params = self.default_params["bgm_separation"]
 
         with gr.Row():
-            dd_model = gr.Dropdown(choices=self.whisper_inf.available_models, value=whisper_params["model_size"],
+            # Use combined models from all implementations
+            available_models = WhisperFactory.get_combined_available_models()
+            dd_model = gr.Dropdown(choices=available_models, value=whisper_params["model_size"],
                                    label=_("Model"), allow_custom_value=True)
             dd_lang = gr.Dropdown(choices=self.whisper_inf.available_langs + [AUTOMATIC_DETECTION],
                                   value=AUTOMATIC_DETECTION if whisper_params["lang"] == AUTOMATIC_DETECTION.unwrap()
