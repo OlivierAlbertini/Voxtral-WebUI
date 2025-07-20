@@ -343,7 +343,7 @@ class WhisperParams(BaseParams):
         default="\"'.。,，!！?？:：”)]}、",
         description="Punctuations to merge with previous word"
     )
-    max_new_tokens: Optional[int] = Field(default=None, description="Maximum number of new tokens per chunk")
+    max_new_tokens: Optional[int] = Field(default=32000, description="Maximum number of new tokens per chunk")
     chunk_length: Optional[int] = Field(default=30, description="Length of audio segments in seconds")
     hallucination_silence_threshold: Optional[float] = Field(
         default=None,
@@ -537,7 +537,7 @@ class WhisperParams(BaseParams):
             ),
             gr.Number(
                 label="Max New Tokens",
-                value=defaults.get("max_new_tokens", GRADIO_NONE_NUMBER_MIN),
+                value=defaults.get("max_new_tokens", 32000),
                 precision=0,
                 info="Maximum number of new tokens per chunk"
             ),

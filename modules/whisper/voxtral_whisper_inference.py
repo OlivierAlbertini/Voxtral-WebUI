@@ -109,7 +109,7 @@ class VoxtralWhisperInference(BaseTranscriptionPipeline):
             with torch.no_grad():
                 outputs = self.model.generate(
                     **inputs, 
-                    max_new_tokens=params.max_new_tokens or 500,
+                    max_new_tokens=params.max_new_tokens or 32000,
                     temperature=params.temperature if params.temperature > 0 else 0.0,
                     do_sample=params.temperature > 0
                 )
