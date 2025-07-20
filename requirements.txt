@@ -14,6 +14,7 @@ torch
 torchaudio
 git+https://github.com/jhj0517/jhj0517-whisper.git
 faster-whisper==1.1.1
+accelerate
 git+https://github.com/huggingface/transformers.git
 mistral-common[audio]
 librosa
