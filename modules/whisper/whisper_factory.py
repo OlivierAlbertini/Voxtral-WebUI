@@ -89,7 +89,7 @@ class WhisperFactory:
         BaseTranscriptionPipeline
             An instance of the appropriate whisper inference class based on the whisper_type.
         """
-        # Temporal fix of the bug : https://github.com/jhj0517/Whisper-WebUI/issues/144
+        # Temporal fix of the bug : https://github.com/OlivierAlbertini/Whisper-WebUI/issues/144
         os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
         whisper_type = whisper_type.strip().lower()

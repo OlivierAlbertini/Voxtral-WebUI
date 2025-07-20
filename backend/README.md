@@ -30,12 +30,12 @@ You can deploy the server with your domain name by setting up a reverse proxy wi
 - Linux : https://nginx.org/en/docs/install.html
 - Windows : https://nginx.org/en/docs/windows.html
 
-2. Edit [`nginx.conf`](https://github.com/jhj0517/Whisper-WebUI/blob/master/backend/nginx/nginx.conf) for your domain name.
-https://github.com/jhj0517/Whisper-WebUI/blob/895cafe400944396ad8be5b1cc793b54fecc8bbe/backend/nginx/nginx.conf#L12
+2. Edit [`nginx.conf`](https://github.com/OlivierAlbertini/Whisper-WebUI/blob/master/backend/nginx/nginx.conf) for your domain name.
+https://github.com/OlivierAlbertini/Whisper-WebUI/blob/895cafe400944396ad8be5b1cc793b54fecc8bbe/backend/nginx/nginx.conf#L12
 
 3. Add an A type record of your public IPv4 address in your domain provider. (you can get it by searching "What is my IP" in Google)
 
-4. Open a terminal and go to the location of [`nginx.conf`](https://github.com/jhj0517/Whisper-WebUI/blob/master/backend/nginx/nginx.conf), then start the nginx server, so that you can manage nginx-related logs there.
+4. Open a terminal and go to the location of [`nginx.conf`](https://github.com/OlivierAlbertini/Whisper-WebUI/blob/master/backend/nginx/nginx.conf), then start the nginx server, so that you can manage nginx-related logs there.
 ```shell
 cd backend/nginx
 nginx -c "/path/to/Whisper-WebUI/backend/nginx/nginx.conf"
@@ -54,7 +54,7 @@ nginx -s stop -c "/path/to/Whisper-WebUI/backend/nginx/nginx.conf"
 
 
 ## Configuration
-You can set some server configurations in [config.yaml](https://github.com/jhj0517/Whisper-WebUI/blob/master/backend/configs/config.yaml). 
+You can set some server configurations in [config.yaml](https://github.com/OlivierAlbertini/Whisper-WebUI/blob/master/backend/configs/config.yaml). 
 <br>For example, initial model size for Whisper or the cleanup frequency and TTL for cached files.
 <br>If the endpoint generates and saves the file, all output files are stored in the `cache` directory, e.g. separated vocal/instrument files for `/bgm-separation` are saved in `cache` directory.
 
@@ -64,10 +64,10 @@ The Dockerfile should be built when you're in the root directory of Whisper-WebU
 
 1. git clone this repository
 ```
-git clone https://github.com/jhj0517/Whisper-WebUI.git
+git clone https://github.com/OlivierAlbertini/Whisper-WebUI.git
 ```
 2. Mount volume paths with your local paths in `docker-compose.yaml`
-https://github.com/jhj0517/Whisper-WebUI/blob/1dd708ec3844dbf0c1f77de9ef5764e883dd4c78/backend/docker-compose.yaml#L12-L15
+https://github.com/OlivierAlbertini/Whisper-WebUI/blob/1dd708ec3844dbf0c1f77de9ef5764e883dd4c78/backend/docker-compose.yaml#L12-L15
 3. Build the image
 ```
 docker compose -f backend/docker-compose.yaml build

@@ -3,7 +3,7 @@ A Gradio-based browser interface for [Voxtral](https://huggingface.co/mistralai/
 
 ![screen](https://github.com/user-attachments/assets/caea3afd-a73c-40af-a347-8d57914b1d0f)
 
-This project is a fork of https://github.com/jhj0517/Whisper-WebUI that I adapted for Voxtral (the french touch) !
+This project is a fork of https://github.com/OlivierAlbertini/Whisper-WebUI that I adapted for Voxtral (the french touch) !
 
 # Feature
 - Select the implementation you want to use between :

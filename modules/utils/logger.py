@@ -4,7 +4,7 @@ from typing import Optional
 
 def get_logger(name: Optional[str] = None):
     if name is None:
-        name = "Whisper-WebUI"
+        name = "Voxtral-WebUI"
     logger = logging.getLogger(name)
 
     if not logger.handlers:

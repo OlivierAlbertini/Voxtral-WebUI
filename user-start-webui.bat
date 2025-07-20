@@ -1,6 +1,6 @@
 @echo off
 :: This batch file is for launching with command line args
-:: See the wiki for a guide to command line arguments: https://github.com/jhj0517/Whisper-WebUI/wiki/Command-Line-Arguments
+:: See the wiki for a guide to command line arguments: https://github.com/OlivierAlbertini/Whisper-WebUI/wiki/Command-Line-Arguments
 :: Set the values here to whatever you want. See the wiki above for how to set this.
 set SERVER_NAME=
 set SERVER_PORT=

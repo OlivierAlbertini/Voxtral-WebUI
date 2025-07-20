@@ -2,7 +2,7 @@ services:
   whisper-webui:
     container_name: whisper-webui
     build: .
-    image: jhj0517/whisper-webui:latest
+    image: OlivierAlbertini/whisper-webui:latest
 
     volumes:
       # You can mount the container's volume paths to directory paths on your local machine.

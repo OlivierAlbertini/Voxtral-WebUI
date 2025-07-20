@@ -38,7 +38,7 @@ CSS = """
 """
 
 MARKDOWN = """
-### [Whisper-WebUI](https://github.com/jhj0517/Whsiper-WebUI)
+### [Voxtral-WebUI](https://github.com/OlivierAlbertini/Whsiper-WebUI)
 """
 
 
