@@ -344,7 +344,7 @@ class WhisperParams(BaseParams):
         description="Punctuations to merge with previous word"
     )
     max_new_tokens: Optional[int] = Field(default=32000, description="Maximum number of new tokens per chunk")
-    chunk_length: Optional[int] = Field(default=30, description="Length of audio segments in seconds")
+    chunk_length: Optional[int] = Field(default=1500, description="Length of audio segments in seconds (default: 1500 = 25 minutes for Voxtral)")
     hallucination_silence_threshold: Optional[float] = Field(
         default=None,
         description="Threshold for skipping silent periods in hallucination detection"
@@ -545,7 +545,7 @@ class WhisperParams(BaseParams):
                 label="Chunk Length (s)",
                 value=defaults.get("chunk_length", cls.__fields__["chunk_length"].default),
                 precision=0,
-                info="Length of audio segments in seconds"
+                info="Length of audio segments in seconds (1500 = 25 minutes for long files)"
             ),
             gr.Number(
                 label="Hallucination Silence Threshold (sec)",
