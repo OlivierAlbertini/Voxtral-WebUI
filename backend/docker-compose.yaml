@@ -3,7 +3,7 @@ services:
     build:
       dockerfile: backend/Dockerfile
       context: ..
-    image: jhj0517/whisper-webui-backend:latest
+    image: OlivierAlbertini/whisper-webui-backend:latest
 
     volumes:
       # You can mount the container's volume paths to directory paths on your local machine.

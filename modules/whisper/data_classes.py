@@ -16,6 +16,7 @@ class WhisperImpl(Enum):
     WHISPER = "whisper"
     FASTER_WHISPER = "faster-whisper"
     INSANELY_FAST_WHISPER = "insanely_fast_whisper"
+    VOXTRAL_MINI = "voxtral-mini"
 
 
 class Segment(BaseModel):
@@ -164,6 +165,14 @@ class DiarizationParams(BaseParams):
         default=True,
         description="Offload Diarization model after Speaker diarization"
     )
+    min_speakers: Optional[int] = Field(
+        default=1,
+        description="Minimum number of speakers to detect. Leave empty for automatic detection"
+    )
+    max_speakers: Optional[int] = Field(
+        default=5,
+        description="Maximum number of speakers to detect. Leave empty for automatic detection"
+    )
 
     @classmethod
     def to_gradio_inputs(cls,
@@ -188,6 +197,22 @@ class DiarizationParams(BaseParams):
             gr.Checkbox(
                 label=_("Offload sub model when finished"),
                 value=defaults.get("enable_offload", cls.__fields__["enable_offload"].default),
+            ),
+            gr.Number(
+                label=_("Minimum speakers"),
+                value=defaults.get("min_speakers", cls.__fields__["min_speakers"].default),
+                minimum=1,
+                maximum=20,
+                precision=0,
+                info=_("Minimum number of speakers to detect. Leave empty for automatic detection")
+            ),
+            gr.Number(
+                label=_("Maximum speakers"),
+                value=defaults.get("max_speakers", cls.__fields__["max_speakers"].default),
+                minimum=1,
+                maximum=20,
+                precision=0,
+                info=_("Maximum number of speakers to detect. Leave empty for automatic detection")
             )
         ]
 
@@ -318,8 +343,8 @@ class WhisperParams(BaseParams):
         default="\"'.。,，!！?？:：”)]}、",
         description="Punctuations to merge with previous word"
     )
-    max_new_tokens: Optional[int] = Field(default=None, description="Maximum number of new tokens per chunk")
-    chunk_length: Optional[int] = Field(default=30, description="Length of audio segments in seconds")
+    max_new_tokens: Optional[int] = Field(default=32000, description="Maximum number of new tokens per chunk")
+    chunk_length: Optional[int] = Field(default=1500, description="Length of audio segments in seconds (default: 1500 = 25 minutes for Voxtral)")
     hallucination_silence_threshold: Optional[float] = Field(
         default=None,
         description="Threshold for skipping silent periods in hallucination detection"
@@ -512,7 +537,7 @@ class WhisperParams(BaseParams):
             ),
             gr.Number(
                 label="Max New Tokens",
-                value=defaults.get("max_new_tokens", GRADIO_NONE_NUMBER_MIN),
+                value=defaults.get("max_new_tokens", 32000),
                 precision=0,
                 info="Maximum number of new tokens per chunk"
             ),
@@ -520,7 +545,7 @@ class WhisperParams(BaseParams):
                 label="Chunk Length (s)",
                 value=defaults.get("chunk_length", cls.__fields__["chunk_length"].default),
                 precision=0,
-                info="Length of audio segments in seconds"
+                info="Length of audio segments in seconds (1500 = 25 minutes for long files)"
             ),
             gr.Number(
                 label="Hallucination Silence Threshold (sec)",

@@ -2,6 +2,8 @@
 
 import os
 import subprocess
+import shutil
+import platform
 from functools import lru_cache
 from typing import Optional, Union
 from scipy.io.wavfile import write
@@ -57,8 +59,17 @@ def load_audio(file: Union[str, np.ndarray], sr: int = SAMPLE_RATE) -> np.ndarra
         temp_file_path = file
 
     try:
+        # Find ffmpeg executable
+        ffmpeg_cmd = shutil.which("ffmpeg")
+        if ffmpeg_cmd is None:
+            # On Windows, try ffmpeg.exe explicitly
+            if platform.system() == "Windows":
+                ffmpeg_cmd = shutil.which("ffmpeg.exe")
+            if ffmpeg_cmd is None:
+                raise RuntimeError("ffmpeg not found. Please install ffmpeg and ensure it's in your PATH.")
+        
         cmd = [
-            "ffmpeg",
+            ffmpeg_cmd,
             "-nostdin",
             "-threads",
             "0",

@@ -5,7 +5,7 @@ from gradio_i18n import Translate, gettext as _
 import yaml
 
 from modules.utils.paths import (FASTER_WHISPER_MODELS_DIR, DIARIZATION_MODELS_DIR, OUTPUT_DIR, WHISPER_MODELS_DIR,
-                                 INSANELY_FAST_WHISPER_MODELS_DIR, NLLB_MODELS_DIR, DEFAULT_PARAMETERS_CONFIG_PATH,
+                                 INSANELY_FAST_WHISPER_MODELS_DIR, VOXTRAL_MODELS_DIR, NLLB_MODELS_DIR, DEFAULT_PARAMETERS_CONFIG_PATH,
                                  UVR_MODELS_DIR, I18N_YAML_PATH)
 from modules.utils.files_manager import load_yaml, MEDIA_EXTENSION
 from modules.whisper.whisper_factory import WhisperFactory
@@ -31,6 +31,7 @@ class App:
             whisper_model_dir=self.args.whisper_model_dir,
             faster_whisper_model_dir=self.args.faster_whisper_model_dir,
             insanely_fast_whisper_model_dir=self.args.insanely_fast_whisper_model_dir,
+            voxtral_model_dir=self.args.voxtral_model_dir,
             uvr_model_dir=self.args.uvr_model_dir,
             output_dir=self.args.output_dir,
         )
@@ -53,7 +54,9 @@ class App:
         uvr_params = self.default_params["bgm_separation"]
 
         with gr.Row():
-            dd_model = gr.Dropdown(choices=self.whisper_inf.available_models, value=whisper_params["model_size"],
+            # Use combined models from all implementations
+            available_models = WhisperFactory.get_combined_available_models()
+            dd_model = gr.Dropdown(choices=available_models, value=whisper_params["model_size"],
                                    label=_("Model"), allow_custom_value=True)
             dd_lang = gr.Dropdown(choices=self.whisper_inf.available_langs + [AUTOMATIC_DETECTION],
                                   value=AUTOMATIC_DETECTION if whisper_params["lang"] == AUTOMATIC_DETECTION.unwrap()
@@ -331,7 +334,7 @@ class App:
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--whisper_type', type=str, default=WhisperImpl.FASTER_WHISPER.value,
+parser.add_argument('--whisper_type', type=str, default=WhisperImpl.VOXTRAL_MINI.value,
                     choices=[item.value for item in WhisperImpl],
                     help='A type of the whisper implementation (Github repo name)')
 parser.add_argument('--share', type=str2bool, default=False, nargs='?', const=True, help='Gradio share value')
@@ -359,6 +362,8 @@ parser.add_argument('--faster_whisper_model_dir', type=str, default=FASTER_WHISP
 parser.add_argument('--insanely_fast_whisper_model_dir', type=str,
                     default=INSANELY_FAST_WHISPER_MODELS_DIR,
                     help='Directory path of the insanely-fast-whisper model')
+parser.add_argument('--voxtral_model_dir', type=str, default=VOXTRAL_MODELS_DIR,
+                    help='Directory path of the voxtral model')
 parser.add_argument('--diarization_model_dir', type=str, default=DIARIZATION_MODELS_DIR,
                     help='Directory path of the diarization model')
 parser.add_argument('--nllb_model_dir', type=str, default=NLLB_MODELS_DIR,

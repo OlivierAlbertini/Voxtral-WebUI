@@ -14,7 +14,7 @@ def get_ytmetas(link):
 
 def get_ytaudio(ytdata: YouTube):
     # Somehow the audio is corrupted so need to convert to valid audio file.
-    # Fix for : https://github.com/jhj0517/Whisper-WebUI/issues/304
+    # Fix for : https://github.com/OlivierAlbertini/Whisper-WebUI/issues/304
 
     audio_path = ytdata.streams.get_audio_only().download(filename=os.path.join("modules", "yt_tmp.wav"))
     temp_audio_path = os.path.join("modules", "yt_tmp_fixed.wav")
