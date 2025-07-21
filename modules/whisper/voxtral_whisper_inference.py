@@ -295,15 +295,15 @@ class VoxtralWhisperInference(BaseTranscriptionPipeline):
                     progress_callback(1.0)
                 
             finally:
-            # Clean up temporary files
-            if isinstance(audio, np.ndarray) or (isinstance(audio, str) and audio_path != audio):
-                if os.path.exists(audio_path):
-                    os.unlink(audio_path)
-            
-            # Clean up chunk files
-            for temp_file in temp_files_to_cleanup:
-                if os.path.exists(temp_file):
-                    os.unlink(temp_file)
+                # Clean up temporary files
+                if isinstance(audio, np.ndarray) or (isinstance(audio, str) and audio_path != audio):
+                    if os.path.exists(audio_path):
+                        os.unlink(audio_path)
+                
+                # Clean up chunk files
+                for temp_file in temp_files_to_cleanup:
+                    if os.path.exists(temp_file):
+                        os.unlink(temp_file)
         
             elapsed_time = time.time() - start_time
             logger.info(f"Voxtral transcription completed in {elapsed_time:.2f}s with {len(segments_result)} segments")
