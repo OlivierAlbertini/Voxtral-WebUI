@@ -90,3 +90,11 @@ async def index():
     You can also check the /redoc with redoc style: https://github.com/Redocly/redoc
     """
     return "/docs"
+
+
+@app.get("/health")
+async def health_check():
+    """
+    Health check endpoint to verify the backend is running.
+    """
+    return {"status": "healthy", "service": "whisper-webui-backend"}

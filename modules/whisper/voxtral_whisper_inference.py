@@ -6,6 +6,7 @@ from typing import BinaryIO, Union, Tuple, List, Callable, Optional
 import gradio as gr
 import tempfile
 import librosa
+import traceback
 
 try:
     from transformers import VoxtralForConditionalGeneration, AutoProcessor
@@ -21,6 +22,9 @@ except ImportError:
 from modules.utils.paths import (VOXTRAL_MODELS_DIR, DIARIZATION_MODELS_DIR, UVR_MODELS_DIR, OUTPUT_DIR)
 from modules.whisper.data_classes import *
 from modules.whisper.base_transcription_pipeline import BaseTranscriptionPipeline
+from modules.utils.logger import get_logger
+
+logger = get_logger()
 
 
 class VoxtralWhisperInference(BaseTranscriptionPipeline):
@@ -49,6 +53,16 @@ class VoxtralWhisperInference(BaseTranscriptionPipeline):
         self.device = self.get_device()
         self.repo_id = "mistralai/Voxtral-Mini-3B-2507"
         self.available_models = ["voxtral-mini-3b"]
+    
+    def _safe_progress(self, progress, value: float, desc: str = ""):
+        """Safely call progress update, handling both Gradio and Mock progress objects"""
+        try:
+            if hasattr(progress, '__call__'):
+                progress(value, desc=desc)
+            else:
+                logger.debug(f"Progress: {desc} ({value*100:.1f}%)")
+        except Exception as e:
+            logger.debug(f"Progress update failed (non-critical): {str(e)}")
         
     def _segment_audio(self, audio_path: str, chunk_length: int = 1500, chunk_overlap: int = 2) -> List[Tuple[float, float, str]]:
         """
@@ -128,51 +142,119 @@ class VoxtralWhisperInference(BaseTranscriptionPipeline):
         """
         start_time = time.time()
         
-        params = WhisperParams.from_list(list(whisper_params))
-        
-        if params.model_size != self.current_model_size or self.model is None:
-            self.update_model(params.model_size, params.compute_type, progress)
-        
-        progress(0.1, desc="Processing audio...")
-        
-        # Convert audio to the format expected by voxtral
-        audio_path = self._prepare_audio(audio)
-        temp_files_to_cleanup = []
-        
         try:
-            # Get audio duration and determine if we need to segment
-            audio_duration = self._get_audio_duration(audio_path)
-            chunk_length = getattr(params, 'chunk_length', 1500)  # Default 25 minutes
-            chunk_overlap = 2  # 2 seconds overlap
+            params = WhisperParams.from_list(list(whisper_params))
+            logger.info(f"Starting Voxtral transcription with params: model_size={params.model_size}, lang={params.lang}, temperature={params.temperature}")
             
-            segments_result = []
+            if params.model_size != self.current_model_size or self.model is None:
+                self.update_model(params.model_size, params.compute_type, progress)
             
-            # Check if audio is longer than chunk_length
-            if audio_duration > chunk_length:
-                progress(0.2, desc="Segmenting audio for long file processing...")
+            self._safe_progress(progress, 0.1, "Processing audio...")
+            if progress_callback:
+                progress_callback(0.1)
+            
+            # Convert audio to the format expected by voxtral
+            audio_path = self._prepare_audio(audio)
+            temp_files_to_cleanup = []
+            
+            try:
+                # Get audio duration and determine if we need to segment
+                audio_duration = self._get_audio_duration(audio_path)
+                chunk_length = getattr(params, 'chunk_length', 1500)  # Default 25 minutes
+                chunk_overlap = 2  # 2 seconds overlap
+                logger.info(f"Audio duration: {audio_duration:.2f}s, chunk_length: {chunk_length}s")
                 
-                # Segment the audio
-                audio_chunks = self._segment_audio(audio_path, chunk_length, chunk_overlap)
-                temp_files_to_cleanup.extend([chunk[2] for chunk in audio_chunks])
+                segments_result = []
                 
-                total_chunks = len(audio_chunks)
-                
-                for i, (chunk_start, chunk_end, chunk_path) in enumerate(audio_chunks):
-                    chunk_progress = 0.2 + (0.7 * i / total_chunks)
-                    progress(chunk_progress, desc=f"Transcribing chunk {i+1}/{total_chunks} ({chunk_start:.0f}s - {chunk_end:.0f}s)")
+                # Check if audio is longer than chunk_length
+                if audio_duration > chunk_length:
+                    self._safe_progress(progress, 0.2, "Segmenting audio for long file processing...")
+                    if progress_callback:
+                        progress_callback(0.2)
                     
-                    # Determine language for first chunk or use provided language
+                    # Segment the audio
+                    audio_chunks = self._segment_audio(audio_path, chunk_length, chunk_overlap)
+                    temp_files_to_cleanup.extend([chunk[2] for chunk in audio_chunks])
+                    
+                    total_chunks = len(audio_chunks)
+                    
+                    for i, (chunk_start, chunk_end, chunk_path) in enumerate(audio_chunks):
+                        chunk_progress = 0.2 + (0.7 * i / total_chunks)
+                        self._safe_progress(progress, chunk_progress, f"Transcribing chunk {i+1}/{total_chunks} ({chunk_start:.0f}s - {chunk_end:.0f}s)")
+                        
+                        # Update progress via callback
+                        if progress_callback:
+                            progress_callback(chunk_progress)
+                        
+                        # Determine language for first chunk or use provided language
+                        language = params.lang if params.lang else "en"
+                    
+                        # Apply transcription request for this chunk
+                        inputs = self.processor.apply_transcrition_request(
+                            language=language, 
+                            audio=chunk_path, 
+                            model_id=self.repo_id
+                        )
+                        inputs = inputs.to(self.device, dtype=torch.bfloat16)
+                        
+                        # Generate transcription for this chunk
+                        logger.debug(f"Generating transcription for chunk {i+1}/{total_chunks}")
+                        with torch.no_grad():
+                            outputs = self.model.generate(
+                                **inputs, 
+                                max_new_tokens=params.max_new_tokens or 32000,
+                                temperature=params.temperature if params.temperature > 0 else 0.0,
+                                do_sample=params.temperature > 0
+                            )
+                        
+                        # Decode outputs
+                        decoded_outputs = self.processor.batch_decode(
+                            outputs[:, inputs.input_ids.shape[1]:], 
+                            skip_special_tokens=True
+                        )
+                        
+                        # Create segment from transcription with adjusted timestamps
+                        transcription_text = decoded_outputs[0].strip() if decoded_outputs else ""
+                        
+                        if transcription_text:  # Only add non-empty segments
+                            segment = Segment(
+                                id=i,
+                                text=transcription_text,
+                                start=chunk_start,
+                                end=chunk_end,
+                                seek=int(chunk_start),
+                                tokens=None,
+                                temperature=params.temperature,
+                                avg_logprob=None,
+                                compression_ratio=None,
+                                no_speech_prob=None,
+                                words=None
+                            )
+                            segments_result.append(segment)
+                        
+                        # Free GPU memory between chunks if needed
+                        if i < total_chunks - 1:
+                            torch.cuda.empty_cache() if torch.cuda.is_available() else None
+                
+                else:
+                    # Process as single segment for short audio
+                    self._safe_progress(progress, 0.3, "Transcribing with Voxtral...")
+                    if progress_callback:
+                        progress_callback(0.3)
+                    
                     language = params.lang if params.lang else "en"
                     
-                    # Apply transcription request for this chunk
                     inputs = self.processor.apply_transcrition_request(
                         language=language, 
-                        audio=chunk_path, 
+                        audio=audio_path, 
                         model_id=self.repo_id
                     )
                     inputs = inputs.to(self.device, dtype=torch.bfloat16)
                     
-                    # Generate transcription for this chunk
+                    self._safe_progress(progress, 0.6, "Generating transcription...")
+                    if progress_callback:
+                        progress_callback(0.6)
+                    
                     with torch.no_grad():
                         outputs = self.model.generate(
                             **inputs, 
@@ -181,22 +263,24 @@ class VoxtralWhisperInference(BaseTranscriptionPipeline):
                             do_sample=params.temperature > 0
                         )
                     
-                    # Decode outputs
+                    self._safe_progress(progress, 0.8, "Processing results...")
+                    if progress_callback:
+                        progress_callback(0.8)
+                    
                     decoded_outputs = self.processor.batch_decode(
                         outputs[:, inputs.input_ids.shape[1]:], 
                         skip_special_tokens=True
                     )
                     
-                    # Create segment from transcription with adjusted timestamps
                     transcription_text = decoded_outputs[0].strip() if decoded_outputs else ""
                     
-                    if transcription_text:  # Only add non-empty segments
-                        segment = Segment(
-                            id=i,
+                    segments_result = [
+                        Segment(
+                            id=0,
                             text=transcription_text,
-                            start=chunk_start,
-                            end=chunk_end,
-                            seek=int(chunk_start),
+                            start=0.0,
+                            end=audio_duration,
+                            seek=0,
                             tokens=None,
                             temperature=params.temperature,
                             avg_logprob=None,
@@ -204,63 +288,13 @@ class VoxtralWhisperInference(BaseTranscriptionPipeline):
                             no_speech_prob=None,
                             words=None
                         )
-                        segments_result.append(segment)
-                    
-                    # Free GPU memory between chunks if needed
-                    if i < total_chunks - 1:
-                        torch.cuda.empty_cache() if torch.cuda.is_available() else None
+                    ]
                 
-            else:
-                # Process as single segment for short audio
-                progress(0.3, desc="Transcribing with Voxtral...")
+                self._safe_progress(progress, 1.0, "Transcription completed!")
+                if progress_callback:
+                    progress_callback(1.0)
                 
-                language = params.lang if params.lang else "en"
-                
-                inputs = self.processor.apply_transcrition_request(
-                    language=language, 
-                    audio=audio_path, 
-                    model_id=self.repo_id
-                )
-                inputs = inputs.to(self.device, dtype=torch.bfloat16)
-                
-                progress(0.6, desc="Generating transcription...")
-                
-                with torch.no_grad():
-                    outputs = self.model.generate(
-                        **inputs, 
-                        max_new_tokens=params.max_new_tokens or 32000,
-                        temperature=params.temperature if params.temperature > 0 else 0.0,
-                        do_sample=params.temperature > 0
-                    )
-                
-                progress(0.8, desc="Processing results...")
-                
-                decoded_outputs = self.processor.batch_decode(
-                    outputs[:, inputs.input_ids.shape[1]:], 
-                    skip_special_tokens=True
-                )
-                
-                transcription_text = decoded_outputs[0].strip() if decoded_outputs else ""
-                
-                segments_result = [
-                    Segment(
-                        id=0,
-                        text=transcription_text,
-                        start=0.0,
-                        end=audio_duration,
-                        seek=0,
-                        tokens=None,
-                        temperature=params.temperature,
-                        avg_logprob=None,
-                        compression_ratio=None,
-                        no_speech_prob=None,
-                        words=None
-                    )
-                ]
-            
-            progress(1.0, desc="Transcription completed!")
-            
-        finally:
+            finally:
             # Clean up temporary files
             if isinstance(audio, np.ndarray) or (isinstance(audio, str) and audio_path != audio):
                 if os.path.exists(audio_path):
@@ -271,8 +305,15 @@ class VoxtralWhisperInference(BaseTranscriptionPipeline):
                 if os.path.exists(temp_file):
                     os.unlink(temp_file)
         
-        elapsed_time = time.time() - start_time
-        return segments_result, elapsed_time
+            elapsed_time = time.time() - start_time
+            logger.info(f"Voxtral transcription completed in {elapsed_time:.2f}s with {len(segments_result)} segments")
+            return segments_result, elapsed_time
+            
+        except Exception as e:
+            logger.error(f"Error in Voxtral transcription: {str(e)}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            # Return empty result on error
+            return [Segment()], 0.0
 
     def update_model(self,
                      model_size: str,
@@ -296,17 +337,17 @@ class VoxtralWhisperInference(BaseTranscriptionPipeline):
             raise ValueError(f"VoxtralWhisperInference only supports 'voxtral-mini-3b', not '{model_size}'. "
                            f"Please use a different whisper_type for model '{model_size}'.")
         
-        progress(0, desc="Initializing Voxtral Model...")
+        self._safe_progress(progress, 0, "Initializing Voxtral Model...")
         
         if self.model is not None and self.current_model_size == model_size:
             return
             
         # Load processor
-        progress(0.3, desc="Loading processor...")
+        self._safe_progress(progress, 0.3, "Loading processor...")
         self.processor = AutoProcessor.from_pretrained(self.repo_id)
         
         # Load model
-        progress(0.6, desc="Loading model...")
+        self._safe_progress(progress, 0.6, "Loading model...")
         self.model = VoxtralForConditionalGeneration.from_pretrained(
             self.repo_id,
             torch_dtype=torch.bfloat16,
@@ -316,7 +357,7 @@ class VoxtralWhisperInference(BaseTranscriptionPipeline):
         self.current_model_size = model_size
         self.current_compute_type = compute_type
         
-        progress(1.0, desc="Model loaded successfully!")
+        self._safe_progress(progress, 1.0, "Model loaded successfully!")
 
     def _prepare_audio(self, audio: Union[str, BinaryIO, np.ndarray]) -> str:
         """
