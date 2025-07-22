@@ -160,9 +160,11 @@ class VoxtralWhisperInference(BaseTranscriptionPipeline):
             try:
                 # Get audio duration and determine if we need to segment
                 audio_duration = self._get_audio_duration(audio_path)
-                chunk_length = getattr(params, 'chunk_length', 1500)  # Default 25 minutes
+                # For Voxtral, we use a different chunk length than regular whisper
+                # Voxtral handles long audio better, so we use 25 minutes chunks
+                chunk_length = 1500  # 25 minutes for Voxtral, ignore whisper's chunk_length param
                 chunk_overlap = 2  # 2 seconds overlap
-                logger.info(f"Audio duration: {audio_duration:.2f}s, chunk_length: {chunk_length}s")
+                logger.info(f"Audio duration: {audio_duration:.2f}s, chunk_length: {chunk_length}s (Voxtral uses fixed 25min chunks)")
                 
                 segments_result = []
                 
@@ -181,6 +183,7 @@ class VoxtralWhisperInference(BaseTranscriptionPipeline):
                     for i, (chunk_start, chunk_end, chunk_path) in enumerate(audio_chunks):
                         chunk_progress = 0.2 + (0.7 * i / total_chunks)
                         self._safe_progress(progress, chunk_progress, f"Transcribing chunk {i+1}/{total_chunks} ({chunk_start:.0f}s - {chunk_end:.0f}s)")
+                        logger.info(f"Processing chunk {i+1}/{total_chunks}: {chunk_start:.0f}s - {chunk_end:.0f}s")
                         
                         # Update progress via callback
                         if progress_callback:
@@ -235,6 +238,10 @@ class VoxtralWhisperInference(BaseTranscriptionPipeline):
                         # Free GPU memory between chunks if needed
                         if i < total_chunks - 1:
                             torch.cuda.empty_cache() if torch.cuda.is_available() else None
+                        
+                        logger.info(f"Completed chunk {i+1}/{total_chunks}")
+                    
+                    logger.info(f"All chunks processed. Total segments: {len(segments_result)}")
                 
                 else:
                     # Process as single segment for short audio
@@ -304,7 +311,7 @@ class VoxtralWhisperInference(BaseTranscriptionPipeline):
                 for temp_file in temp_files_to_cleanup:
                     if os.path.exists(temp_file):
                         os.unlink(temp_file)
-        
+            
             elapsed_time = time.time() - start_time
             logger.info(f"Voxtral transcription completed in {elapsed_time:.2f}s with {len(segments_result)} segments")
             return segments_result, elapsed_time
